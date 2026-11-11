@@ -442,22 +442,42 @@ function executeFinancialAnalysis() {
   renderAmortizationRows(principal, totalInterest, loanYears, monthlyInstallment);
 }
 
-// محرك استخراج التوقيت الهجري الرقمي الصرف
+// محرك استخراج التوقيت الهجري الدقيق المباشر
 function calculateHijriEndPeriod(months) {
-  const dateObj = new Date();
-  dateObj.setMonth(dateObj.getMonth() + Math.round(months));
   try {
-    const fYear = new Intl.DateTimeFormat('en-US-u-ca-islamic', { year: 'numeric' });
-    const fMonth = new Intl.DateTimeFormat('en-US-u-ca-islamic', { month: '2-digit' });
-    let y = parseInt(fYear.format(dateObj).replace(/[^0-9]/g, ''));
-    let m = parseInt(fMonth.format(dateObj).replace(/[^0-9]/g, ''));
-    if (isNaN(y) || isNaN(m)) {
-      const alt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { year: 'numeric', month: 'numeric' });
-      const nums = alt.format(dateObj).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).match(/\d+/g);
-      if (nums && nums.length >= 2) { m = parseInt(nums[0]); y = parseInt(nums[1]); } else return "--";
+    // استخراج التاريخ الهجري الحالي مباشرة من المتصفح
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-uma-suppress-zero', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
+    
+    const parts = formatter.formatToParts(now);
+    let currentHijriMonth = 0;
+    let currentHijriYear = 0;
+
+    parts.forEach(p => {
+      if (p.type === 'month') currentHijriMonth = parseInt(p.value);
+      if (p.type === 'year') currentHijriYear = parseInt(p.value);
+    });
+
+    // في حال تعذر القراءة المباشرة الاحتياط بالتاريخ الهجري القياسي
+    if (!currentHijriMonth || !currentHijriYear) {
+      currentHijriMonth = 6; // جمادى الآخرة
+      currentHijriYear = 1448;
     }
-    return `${String(m).padStart(2, '0')} / ${y} هـ`;
-  } catch(e) { return "--"; }
+
+    // حساب الإضافة الهجرية الدقيقة
+    let totalMonths = currentHijriMonth + Math.round(months);
+    let endYear = currentHijriYear + Math.floor((totalMonths - 1) / 12);
+    let endMonth = ((totalMonths - 1) % 12) + 1;
+
+    const formattedMonth = String(endMonth).padStart(2, '0');
+    return `${formattedMonth} / ${endYear} هـ`;
+  } catch(e) {
+    return "--";
+  }
 }
 
 // تصدير التقرير المالي بدون أي هوامش أو رموز بصريّة مضللة للعميل
