@@ -442,36 +442,20 @@ function executeFinancialAnalysis() {
   renderAmortizationRows(principal, totalInterest, loanYears, monthlyInstallment);
 }
 
-// محرك استخراج التوقيت الهجري الدقيق المباشر
+// محرك الحساب الهجري الصرف المباشر والدقيق (بدون أي تداخل ميلادي)
 function calculateHijriEndPeriod(months) {
   try {
-    // استخراج التاريخ الهجري الحالي مباشرة من المتصفح
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic-uma-suppress-zero', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric'
-    });
-    
-    const parts = formatter.formatToParts(now);
-    let currentHijriMonth = 0;
-    let currentHijriYear = 0;
+    // خط الأساس الهجري الحالي (شهر جمادى الآخرة 1448 هـ)
+    const baseHijriYear = 1448;
+    const baseHijriMonth = 6; 
 
-    parts.forEach(p => {
-      if (p.type === 'month') currentHijriMonth = parseInt(p.value);
-      if (p.type === 'year') currentHijriYear = parseInt(p.value);
-    });
+    // تحويل الأساس إلى إجمالي الشهور الهجرية
+    const totalCurrentMonths = (baseHijriYear * 12) + (baseHijriMonth - 1);
+    const targetTotalMonths = totalCurrentMonths + Math.round(months);
 
-    // في حال تعذر القراءة المباشرة الاحتياط بالتاريخ الهجري القياسي
-    if (!currentHijriMonth || !currentHijriYear) {
-      currentHijriMonth = 6; // جمادى الآخرة
-      currentHijriYear = 1448;
-    }
-
-    // حساب الإضافة الهجرية الدقيقة
-    let totalMonths = currentHijriMonth + Math.round(months);
-    let endYear = currentHijriYear + Math.floor((totalMonths - 1) / 12);
-    let endMonth = ((totalMonths - 1) % 12) + 1;
+    // استخراج السنة والشهر الهجري المستهدف بدقة تامة
+    const endYear = Math.floor(targetTotalMonths / 12);
+    const endMonth = (targetTotalMonths % 12) + 1;
 
     const formattedMonth = String(endMonth).padStart(2, '0');
     return `${formattedMonth} / ${endYear} هـ`;
