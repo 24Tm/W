@@ -389,8 +389,7 @@ function executeFinancialAnalysis() {
   const retirementHijriMonths = (1456 * 12) + (3 - 1);
   const loanEndHijriMonths = (endHijriYear * 12) + (endHijriMonth - 1);
   
-  const exactOverlapMonths = loanEndHijriMonths - retirementHijriMonths;
-  const retirementOverlap = exactOverlapMonths > 0 ? (exactOverlapMonths / 12) : 0;
+  const overlapMonths = loanEndHijriMonths - retirementHijriMonths; // عدد الشهور الفعلي بعد التقاعد
 
   const hijriOutput = `${String(endHijriMonth).padStart(2, '0')} / ${endHijriYear} هـ`;
 
@@ -406,7 +405,7 @@ function executeFinancialAnalysis() {
   getElement('outDsr').textContent = dsrPercentage.toFixed(1) + "%";
   getElement('outHiddenCosts').textContent = formatCurrency(hiddenCostsTotal) + " ريال";
 
-  // إدارة نظام التنبيهات المرتبطة بسقف الأقساط والقواعد المعتمدة
+  // إدارة نظام التنبيهات بدقة متناهية بالشهور
   const box = getElement('verdictBox');
   const retirementSalaryEst = salary * 0.70;
   const dsrAtRetirement = (monthlyInstallment / retirementSalaryEst) * 100;
@@ -424,21 +423,21 @@ function executeFinancialAnalysis() {
     box.className = "status-banner status-danger";
     textResult = "قرار حرج (تجاوز حد الأمان الائتماني): نسبة الاستقطاع الكلية خانقة وتتجاوز خطوط الأمان، مما يهدد السيولة اليومية للأسرة.";
   }
-  else if (retirementOverlap > 0 && dsrAtRetirement > 65) {
+  else if (overlapMonths > 0 && dsrAtRetirement > 65) {
     box.className = "status-banner status-danger";
-    textResult = `قرار حرج (مخاطر تقاعدية داهمة): العقد يمتد لـ ${retirementOverlap.toFixed(1)} سنة داخل زمن تقاعدك، وسيلتهم حوالي ${dsrAtRetirement.toFixed(0)}% من معاشك التقاعدي المخفض!`;
+    textResult = `قرار حرج (مخاطر تقاعدية داهمة): العقد يمتد لـ ${overlapMonths} شهر بعد تقاعدك، وسيلتهم حوالي ${dsrAtRetirement.toFixed(0)}% من معاشك التقاعدي المخفض!`;
   }
-  else if (dsrPercentage <= 45 && retirementOverlap <= 0 && netCashRemaining >= 4500) {
+  else if (dsrPercentage <= 45 && overlapMonths <= 0 && netCashRemaining >= 4500) {
     box.className = "status-banner status-safe";
     textResult = "🟢 قرار معتمد (آمن ائتمانياً): ملفك المالي متزن، والقسط ضمن الحدود المستهدفة والمريحة للأسرة، وينتهي بالكامل قبل أو عند التقاعد.";
   }
-  else if (retirementOverlap <= 0) {
+  else if (overlapMonths <= 0) {
     box.className = "status-banner status-safe";
     textResult = "🟢 قرار معتمد وآمن: الأقساط ممتازة وتنتهي بالكامل قبل بلوغك سن التقاعد النظامي.";
   }
   else {
     box.className = "status-banner status-warning";
-    textResult = `⚠️ قرار مشروط بالحذر: الخطة دفترياً مقبولة والأقساط ممتازة وتحت الـ 5,500 ريال، لكن احذر من امتداد الالتزام لـ ${retirementOverlap.toFixed(1)} سنة بعد التقاعد.`;
+    textResult = `⚠️ قرار مشروط بالحذر: الخطة دفترياً مقبولة والأقساط ممتازة وتحت الـ 5,500 ريال، لكن احذر من امتداد الالتزام لـ ${overlapMonths} شهر بعد التقاعد.`;
   }
 
   box.innerHTML = `<strong>${textResult}</strong>`;
