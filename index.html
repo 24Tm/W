@@ -376,8 +376,23 @@ function executeFinancialAnalysis() {
   const hiddenCostsTotal = taxCost + brokerCost + adminCost;
 
   const loanYears = months / 12;
-  const retirementOverlap = Math.max(0, loanYears - serviceYears);
-  const hijriOutput = calculateHijriEndPeriod(months);
+  
+  // حساب تواريخ النهاية بالمقارنة الدقيقة للشهور الهجرية
+  const baseHijriYear = 1448;
+  const baseHijriMonth = 6; 
+  const totalCurrentMonths = (baseHijriYear * 12) + (baseHijriMonth - 1);
+  const targetTotalMonths = totalCurrentMonths + Math.round(months);
+  const endHijriYear = Math.floor(targetTotalMonths / 12);
+  const endHijriMonth = (targetTotalMonths % 12) + 1;
+
+  // تاريخ التقاعد الهجري المحدد بدقة (شهر 3 سنة 1456 هـ)
+  const retirementHijriMonths = (1456 * 12) + (3 - 1);
+  const loanEndHijriMonths = (endHijriYear * 12) + (endHijriMonth - 1);
+  
+  const exactOverlapMonths = loanEndHijriMonths - retirementHijriMonths;
+  const retirementOverlap = exactOverlapMonths > 0 ? (exactOverlapMonths / 12) : 0;
+
+  const hijriOutput = `${String(endHijriMonth).padStart(2, '0')} / ${endHijriYear} هـ`;
 
   // إسقاط المخرجات على لوحة البيانات
   getElement('outInstallment').textContent = formatCurrency(monthlyInstallment) + " ريال";
@@ -413,9 +428,13 @@ function executeFinancialAnalysis() {
     box.className = "status-banner status-danger";
     textResult = `قرار حرج (مخاطر تقاعدية داهمة): العقد يمتد لـ ${retirementOverlap.toFixed(1)} سنة داخل زمن تقاعدك، وسيلتهم حوالي ${dsrAtRetirement.toFixed(0)}% من معاشك التقاعدي المخفض!`;
   }
-  else if (dsrPercentage <= 45 && retirementOverlap === 0 && netCashRemaining >= 4500) {
+  else if (dsrPercentage <= 45 && retirementOverlap <= 0 && netCashRemaining >= 4500) {
     box.className = "status-banner status-safe";
-    textResult = "🟢 قرار معتمد (آمن ائتمانياً): ملفك المالي متزن، والقسط ضمن الحدود المستهدفة والمريحة للأسرة، وينتهي بالكامل قبل التقاعد.";
+    textResult = "🟢 قرار معتمد (آمن ائتمانياً): ملفك المالي متزن، والقسط ضمن الحدود المستهدفة والمريحة للأسرة، وينتهي بالكامل قبل أو عند التقاعد.";
+  }
+  else if (retirementOverlap <= 0) {
+    box.className = "status-banner status-safe";
+    textResult = "🟢 قرار معتمد وآمن: الأقساط ممتازة وتنتهي بالكامل قبل بلوغك سن التقاعد النظامي.";
   }
   else {
     box.className = "status-banner status-warning";
@@ -440,28 +459,6 @@ function executeFinancialAnalysis() {
   };
 
   renderAmortizationRows(principal, totalInterest, loanYears, monthlyInstallment);
-}
-
-// محرك الحساب الهجري الصرف المباشر والدقيق (بدون أي تداخل ميلادي)
-function calculateHijriEndPeriod(months) {
-  try {
-    // خط الأساس الهجري الحالي (شهر جمادى الآخرة 1448 هـ)
-    const baseHijriYear = 1448;
-    const baseHijriMonth = 6; 
-
-    // تحويل الأساس إلى إجمالي الشهور الهجرية
-    const totalCurrentMonths = (baseHijriYear * 12) + (baseHijriMonth - 1);
-    const targetTotalMonths = totalCurrentMonths + Math.round(months);
-
-    // استخراج السنة والشهر الهجري المستهدف بدقة تامة
-    const endYear = Math.floor(targetTotalMonths / 12);
-    const endMonth = (targetTotalMonths % 12) + 1;
-
-    const formattedMonth = String(endMonth).padStart(2, '0');
-    return `${formattedMonth} / ${endYear} هـ`;
-  } catch(e) {
-    return "--";
-  }
 }
 
 // تصدير التقرير المالي بدون أي هوامش أو رموز بصريّة مضللة للعميل
